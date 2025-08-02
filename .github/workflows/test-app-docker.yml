@@ -1,9 +1,10 @@
 name: Run ASP.NET API and NUnit Tests
 
-on:
+on: 
+  push:
+    branches: [main]
   pull_request:
-    branches: [ main ]
-
+    branches: [main]
 jobs:
   build-test:
     runs-on: windows-2022
