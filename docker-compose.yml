@@ -2,7 +2,7 @@ version: '3.4'
 
 services:
   web:
-    image: TestApp-api
+    image: testapp-api
     build:
       context: .
       dockerfile: Dockerfile
