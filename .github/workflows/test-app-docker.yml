@@ -1,0 +1,65 @@
+name: .NET NUnit Tests with Docker
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  DOTNET_VERSION: "8.0.x"
+  DOCKER_REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-test:
+    name: Build, Test with Docker
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Start Docker service
+        run: Start-Service docker
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:test --platform windows/amd64 .
+
+      - name: Create TestResults directory
+        run: New-Item -ItemType Directory -Force -Path TestResults
+
+      - name: Run tests in Docker container
+        run: |
+          docker run --rm `
+            -v ${env:GITHUB_WORKSPACE}/TestResults:C:\app\TestResults `
+            -w C:\app `
+            ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:test `
+            dotnet test --configuration Release `
+              --logger "trx;LogFileName=test-results.trx" `
+              --results-directory C:\app\TestResults
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: TestResults\*
+
+      - name: Push Docker image (on main branch)
+        if: github.ref == 'refs/heads/main'
+        run: |
+          docker push ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:test
