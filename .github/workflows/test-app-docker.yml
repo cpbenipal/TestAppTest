@@ -1,6 +1,6 @@
 name: Run ASP.NET API and NUnit Tests
 
-on: 
+on:
   push:
     branches: [main]
   pull_request:
@@ -20,26 +20,26 @@ jobs:
     - name: Restore NuGet packages
       run: nuget restore TestApp.sln
 
-    - name: Build the solution
-      run: |
-        & "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe" TestApp.sln /p:Configuration=Release
+    - name: Build solution
+      run: '"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe" TestApp.sln /p:Configuration=Release'
 
     - name: Publish ASP.NET Web API
       run: |
-        & "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe" TestApp\TestApp.csproj `
-          /p:Configuration=Release `
-          /p:DeployOnBuild=true `
-          /p:WebPublishMethod=FileSystem `
-          /p:PublishProvider=FileSystem `
-          /p:PublishDir=published-api
+        & "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe" `
+        TestApp.API\TestApp.API.csproj `
+        /p:Configuration=Release `
+        /p:DeployOnBuild=true `
+        /p:WebPublishMethod=FileSystem `
+        /p:PublishProvider=FileSystem `
+        /p:PublishDir=published-api
 
     - name: Build Docker image
       run: docker build -t testapp-api -f Dockerfile .
 
-    - name: Start API container
+    - name: Run API container
       run: docker run -d -p 8080:80 --name api testapp-api
 
-    - name: Wait for API to start
+    - name: Wait for API to be ready
       shell: pwsh
       run: |
         $maxRetries = 10
@@ -48,11 +48,11 @@ jobs:
           try {
             $response = Invoke-WebRequest http://localhost:8080/api/hello -UseBasicParsing -TimeoutSec 10
             if ($response.StatusCode -eq 200) {
-              Write-Host "API is up!"
+              Write-Host "✅ API is up and running"
               break
             }
           } catch {
-            Write-Host "Waiting for API... ($retry)"
+            Write-Host "⏳ Waiting for API to start... ($retry)"
           }
           Start-Sleep -Seconds 5
           $retry++
@@ -60,9 +60,9 @@ jobs:
 
     - name: Run NUnit tests
       run: |
-        & "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\TestPlatform\vstest.console.exe" TestApp.Tests\bin\Release\TestApp.Tests.dll
+        "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\TestPlatform\vstest.console.exe" TestApp.Tests\bin\Release\TestApp.Tests.dll
 
-    - name: Cleanup Docker container
+    - name: Cleanup Docker
       if: always()
       run: |
         docker stop api
