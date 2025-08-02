@@ -35,7 +35,7 @@ jobs:
       run: docker build -t testapp-api -f Dockerfile .
 
     - name: Run API container
-      run: docker run -d -p 8080:80 --name api testapp-api
+      run: docker run -d -p 5000:80 --name api testapp-api
 
     - name: Wait for API to be ready
       shell: pwsh
@@ -44,7 +44,7 @@ jobs:
         $retry = 0
         while ($retry -lt $maxRetries) {
           try {
-            $response = Invoke-WebRequest http://localhost:8080/api/hello -UseBasicParsing -TimeoutSec 10
+            $response = Invoke-WebRequest http://localhost:5000/api/hello -UseBasicParsing -TimeoutSec 10
             if ($response.StatusCode -eq 200) {
               Write-Host " API is up and running"
               break
