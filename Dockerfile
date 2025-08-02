@@ -1,19 +1,13 @@
-# Use Windows-based .NET SDK image
-FROM mcr.microsoft.com/dotnet/sdk:8.0-nanoserver-ltsc2022 AS build
-WORKDIR /app
+# Use the ASP.NET 4.8 base image
+FROM mcr.microsoft.com/dotnet/framework/aspnet:4.8-windowsservercore-ltsc2022
 
-# Copy everything
-COPY . .
+SHELL ["powershell", "-Command"]
 
-# Restore dependencies
-RUN dotnet restore
+# Set working directory
+WORKDIR /inetpub/wwwroot
 
-# Build the application
-RUN dotnet build -c Release -o out --no-restore
+# Copy published app
+COPY TestApp/bin/Release/ ./
 
-# Test stage
-FROM build AS test
-WORKDIR /app
-RUN dotnet add package NUnit3TestAdapter --version 4.5.0
-RUN dotnet add package Microsoft.NET.Test.Sdk --version 17.6.3
-RUN mkdir C:\app\TestResults
+# Expose the port your API uses
+EXPOSE 80

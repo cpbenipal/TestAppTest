@@ -1,65 +1,56 @@
-name: .NET NUnit Tests with Docker
+name: Run ASP.NET API and NUnit Tests
 
 on:
-  push:
-    branches: [main]
   pull_request:
-    branches: [main]
-
-env:
-  DOTNET_VERSION: "8.0.x"
-  DOCKER_REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+    branches: [ main ]
 
 jobs:
-  build-and-test:
-    name: Build, Test with Docker
+  build-test:
     runs-on: windows-2022
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+    - name: Set up NuGet
+      uses: NuGet/setup-nuget@v2
 
-      - name: Start Docker service
-        run: Start-Service docker
+    - name: Restore NuGet packages
+      run: nuget restore TestApp.sln
 
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.DOCKER_REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Build the solution
+      run: msbuild TestApp.sln /p:Configuration=Release
 
-      - name: Build Docker image
-        run: |
-          docker build -t ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:test --platform windows/amd64 .
+    - name: Build Docker image
+      run: docker build -t TestApp-api -f Dockerfile .
 
-      - name: Create TestResults directory
-        run: New-Item -ItemType Directory -Force -Path TestResults
+    - name: Start API container
+      run: docker run -d -p 8080:80 --name api TestApp-api
 
-      - name: Run tests in Docker container
-        run: |
-          docker run --rm `
-            -v ${env:GITHUB_WORKSPACE}/TestResults:C:\app\TestResults `
-            -w C:\app `
-            ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:test `
-            dotnet test --configuration Release `
-              --logger "trx;LogFileName=test-results.trx" `
-              --results-directory C:\app\TestResults
+    - name: Wait for API to start
+      run: |
+        $maxRetries = 10
+        $retry = 0
+        while ($retry -lt $maxRetries) {
+          try {
+            $response = Invoke-WebRequest https://localhost:44311/api/hello -UseBasicParsing
+            if ($response.StatusCode -eq 200) {
+              Write-Host "API is up!"
+              break
+            }
+          } catch {
+            Write-Host "Waiting for API..."
+          }
+          Start-Sleep -Seconds 5
+          $retry++
+        }
 
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: test-results
-          path: TestResults\*
+    - name: Run NUnit tests
+      run: |
+        vstest.console.exe TestApp.Tests\bin\Release\TestApp.Tests.dll
 
-      - name: Push Docker image (on main branch)
-        if: github.ref == 'refs/heads/main'
-        run: |
-          docker push ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:test
+    - name: Cleanup Docker container
+      if: always()
+      run: |
+        docker stop api
+        docker rm api
