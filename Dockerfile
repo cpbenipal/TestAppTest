@@ -1,13 +1,11 @@
-# Use the ASP.NET 4.8 base image
+# Use the official Microsoft .NET Framework 4.8 ASP.NET image
 FROM mcr.microsoft.com/dotnet/framework/aspnet:4.8-windowsservercore-ltsc2022
 
-SHELL ["powershell", "-Command"]
-
-# Set working directory
+# Set the working directory
 WORKDIR /inetpub/wwwroot
 
-# Copy published app
-COPY TestApp/bin/Release/ ./
+# Copy published Web API files
+COPY ./TestApp.API/ .
 
-# Expose the port your API uses
+# Expose the default HTTP port
 EXPOSE 80

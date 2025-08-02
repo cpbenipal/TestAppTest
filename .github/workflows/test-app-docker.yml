@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+
 jobs:
   build-test:
     runs-on: windows-2022
@@ -22,25 +23,34 @@ jobs:
     - name: Build the solution
       run: msbuild TestApp.sln /p:Configuration=Release
 
+    - name: Publish ASP.NET Web API
+      run: msbuild TestApp.API/TestApp.API.csproj `
+        /p:Configuration=Release `
+        /p:DeployOnBuild=true `
+        /p:WebPublishMethod=FileSystem `
+        /p:PublishProvider=FileSystem `
+        /p:PublishDir="published-api"
+
     - name: Build Docker image
-      run: docker build -t TestApp-api -f Dockerfile .
+      run: docker build -t testapp-api -f Dockerfile .
 
     - name: Start API container
-      run: docker run -d -p 8080:80 --name api TestApp-api
+      run: docker run -d -p 8080:80 --name api testapp-api
 
     - name: Wait for API to start
+      shell: pwsh
       run: |
         $maxRetries = 10
         $retry = 0
         while ($retry -lt $maxRetries) {
           try {
-            $response = Invoke-WebRequest https://localhost:44311/api/hello -UseBasicParsing
+            $response = Invoke-WebRequest http://localhost:8080/api/hello -UseBasicParsing -TimeoutSec 10
             if ($response.StatusCode -eq 200) {
               Write-Host "API is up!"
               break
             }
           } catch {
-            Write-Host "Waiting for API..."
+            Write-Host "Waiting for API... ($retry)"
           }
           Start-Sleep -Seconds 5
           $retry++
@@ -48,7 +58,7 @@ jobs:
 
     - name: Run NUnit tests
       run: |
-        vstest.console.exe TestApp.Tests\bin\Release\TestApp.Tests.dll
+        "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\TestPlatform\vstest.console.exe" TestApp.Tests\bin\Release\TestApp.Tests.dll
 
     - name: Cleanup Docker container
       if: always()
