@@ -12,9 +12,9 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{487D662A-21CA-41EC-B204-F0765AB40FDD}</ProjectGuid>
-    <OutputType>Exe</OutputType>
-    <RootNamespace>WebApplication1.Tests</RootNamespace>
-    <AssemblyName>WebApplication1.Tests</AssemblyName>
+    <OutputType>Library</OutputType>
+    <RootNamespace>TestApp.Tests</RootNamespace>
+    <AssemblyName>TestApp.Tests</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -40,6 +40,9 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.ApplicationInsights, Version=2.22.0.997, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
