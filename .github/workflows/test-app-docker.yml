@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  MSBUILD_PATH: "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\MSBuild\\Current\\Bin\\MSBuild.exe"
+  VSTEST_PATH: "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\Common7\\IDE\\Extensions\\TestPlatform\\vstest.console.exe"
+
 jobs:
   build-test:
     runs-on: windows-2022
@@ -21,15 +25,10 @@ jobs:
       run: nuget restore TestApp.sln
 
     - name: Build the solution
-      run: msbuild TestApp.sln /p:Configuration=Release
+      run: '"${{ env.MSBUILD_PATH }}" TestApp.sln /p:Configuration=Release'
 
     - name: Publish ASP.NET Web API
-      run: msbuild TestApp.API/TestApp.API.csproj `
-        /p:Configuration=Release `
-        /p:DeployOnBuild=true `
-        /p:WebPublishMethod=FileSystem `
-        /p:PublishProvider=FileSystem `
-        /p:PublishDir="published-api"
+      run: '"${{ env.MSBUILD_PATH }}" TestApp.API\TestApp.API.csproj /p:Configuration=Release /p:DeployOnBuild=true /p:WebPublishMethod=FileSystem /p:PublishProvider=FileSystem /p:PublishDir=published-api'
 
     - name: Build Docker image
       run: docker build -t testapp-api -f Dockerfile .
@@ -57,8 +56,7 @@ jobs:
         }
 
     - name: Run NUnit tests
-      run: |
-        "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\TestPlatform\vstest.console.exe" TestApp.Tests\bin\Release\TestApp.Tests.dll
+      run: '"${{ env.VSTEST_PATH }}" TestApp.Tests\bin\Release\TestApp.Tests.dll'
 
     - name: Cleanup Docker container
       if: always()
