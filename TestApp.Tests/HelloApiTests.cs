@@ -9,7 +9,7 @@ namespace TestApp.Tests
     public class HelloApiTests
     {
         private static readonly HttpClient client = new HttpClient();
-        private string _baseUrl = "http://localhost:8080";
+        private string _baseUrl = "http://<service-name>:8080";
        // private string _baseUrl = "http://host.docker.internal:5000";
         
         [Test]
