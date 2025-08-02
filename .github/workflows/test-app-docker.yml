@@ -28,6 +28,9 @@ jobs:
       run: '& "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe" TestApp\TestApp.csproj /p:Configuration=Release /p:DeployOnBuild=true /p:WebPublishMethod=FileSystem /p:PublishProvider=FileSystem /p:PublishDir=published-api'
 
 
+    - name: List published files
+      run: dir published-api
+
     - name: Build Docker image
       run: docker build -t testapp-api -f Dockerfile .
 
